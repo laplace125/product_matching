@@ -1,0 +1,601 @@
+CHAPTER FOUR: IMPLEMENTATION
+INTRODUCTION:
+In this section, I will delve into the practical implementation the thesis titled "Product Matching: A Supervised Learning Approach.".
+Building upon the foundation laid by our earlier chapters, I will detail the technical execution of our supervised learning methodology aimed at addressing the intricate challenge of product matching. In this chapter I will outline the data preparation procedures, experimental features selection , model fitting, model accuracy and model selection. 
+IMPORTING THE LIBRARIES:
+Python is a versatile programming language made even more useful with its libraries. These libraries provide ready-made tools and functions that make coding easier and expand what you can do with your programs. Some libraries imported include, Pandas, json, sklearn, regular expression(re), string, NLTK, etc.
+ 
+
+
+Reading data:
+After downloading the data to the local machine, we need to read the data into our notebook.
+The screenshot below shows how the data is read into Jupyter notebook. Each data shown below were in zip format, after extraction, they were in json format.
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Viewing the shape of the data:
+The shape of a DataFrame refers to the dimension or size of the data structure. It provides information about the number of rows and columns present in the data. The shape is represented as a tuple with two elements: the first element indicates the number of rows, and the second element indicates the number of column.
+In the case of the data I use, the first data, computers_train_xlarge.json has a shape of 68461 by 20, i.e 64461 rows and 20 columns.the second data, the gold standard data, computers_gs.json has a shape of 1100 by 22, while the last data, the test set data has a shape of1500 by 21
+ 
+As shown above, the datasets don’t have the same number of columns, on a closer look, On a closer look, the column "sampling" is present in the test_set, but missing in the remaining two columns. Also, the columns "identifiers_left" and "identifiers_right" are present data_gs , but missing in test_set. we need to drop the columns "sampling" , "identifiers_left" and "identifiers_right" in order to make all datasets have the same number of columns.
+
+
+
+
+
+
+
+
+
+
+
+VIEWING THE MISSING DATA
+ 
+The first dataset, computer_train_xlarge, named data , have 415,205 null values in total, the total data points in the data is 1,369,220. That means that about 31 percent of the datapoints are null values. The remaining two datasets also have a lot of missing values. I dropped all missing values in the three datasets, and the shape of the new datasets are shown below.
+ 
+As we can see above the recordsdropped due to null values are too much. For data dataset, about 98 percent of the data are deleted , for test_set , 96 percent are deleted.Also ,in the gold standard dataset , 96 percent of the dataset have been phased out.
+
+The remaining data is not enough for training most machine learning algorithms and also might not be enough to model the whole dataset
+
+We will replace all null values with blank(" "), then combine all features to one column. This is to ensure that we use all possible information for our classification, and this will form our first experiment.
+EXPERIMENT ONE
+As stated above , I will replace all columns with blank and then combine all the columns to form one column. To implement that, in order to avoid tamperin with the original dataset, I used the code data1 = data.copy(deep=True) to replicate the data, then data1 = data1.fillna('') to fill the null values with blank.
+The code:
+data1['product_feature'] = str(data1['id_left']) + " " +str(data1['category_left']) + " " + str(data1['cluster_id_left']) + " " + str(data1['id_right']) + " " + data1['category_right']+ " " + str(data1['cluster_id_right'])+ " " + data1['brand_left']+ " " + data1['brand_right']+ " " + data1['description_left']+ " " + data1['description_right']+ " " + str(data1['keyValuePairs_left'])+ " " + str(data1['keyValuePairs_right'])+ " " + str(data1['price_left'])+  " " +str(data1['price_right'])+ " " + data1['specTableContent_left']+ " " + data1['specTableContent_right']+ " " + data1['title_left']+  " " +data1['title_right']
+was used to combine all columns into one column, the new column is product_feature
+And lastly , the code:
+data1.drop(data1.columns.difference(['product_feature','label']), 1, inplace=True)
+to drop all columns except label and product_feature
+
+The complete code for combining the features for the datasetdatasets are given below. 
+
+data1 = data.copy(deep=True) 
+data1 = data1.fillna('')
+data1['product_feature'] = str(data1['id_left']) + " " +str(data1['category_left']) + " " + str(data1['cluster_id_left']) + " " + str(data1['id_right']) + " " + data1['category_right']+ " " + str(data1['cluster_id_right'])+ " " + data1['brand_left']+ " " + data1['brand_right']+ " " + data1['description_left']+ " " + data1['description_right']+ " " + str(data1['keyValuePairs_left'])+ " " + str(data1['keyValuePairs_right'])+ " " + str(data1['price_left'])+  " " +str(data1['price_right'])+ " " + data1['specTableContent_left']+ " " + data1['specTableContent_right']+ " " + data1['title_left']+  " " +data1['title_right']
+data1.drop(data1.columns.difference(['product_feature','label']), 1, inplace=True)
+
+test_set1 = test_set.copy(deep=True) 
+test_set1 = test_set1.fillna('')
+test_set1['product_feature'] = str(test_set1['id_left']) +  " " +str(test_set1['category_left']) +  " " +str(test_set1['cluster_id_left']) + " " + str(test_set1['id_right']) +  " " +test_set1['category_right']+ " " + str(test_set1['cluster_id_right'])+ " " + test_set1['brand_left']+ " " + test_set1['brand_right']+  " " +test_set1['description_left']+ " " + test_set1['description_right']+ " " + str(test_set1['keyValuePairs_left'])+ " " + str(test_set1['keyValuePairs_right'])+ " " + str(test_set1['price_left'])+ " " + str(test_set1['price_right'])+ " " + test_set1['specTableContent_left']+ " " + test_set1['specTableContent_right']+ " " + test_set1['title_left']+ " " + test_set1['title_right']
+test_set1.drop(test_set1.columns.difference(['product_feature','label']), 1, inplace=True)
+
+data_gs1 = data_gs.copy(deep=True)
+data_gs1 = data_gs1.fillna('')
+data_gs1['product_feature'] = str(data_gs1['id_left']) +  " " +str(data_gs1['category_left']) + " " + str(data_gs1['cluster_id_left']) + " " + str(data_gs1['id_right']) + " " + data_gs1['category_right']+ " " + str(data_gs1['cluster_id_right'])+  " " +data_gs1['brand_left']+  " " +data_gs1['brand_right']+  " " +data_gs1['description_left']+  " " +data_gs1['description_right']+ " " + str(data_gs1['keyValuePairs_left'])+ " " + str(data_gs1['keyValuePairs_right'])+ " " + str(data_gs1['price_left'])+ " " + str(data_gs1['price_right'])+ " " + data_gs1['specTableContent_left']+  " " +data_gs1['specTableContent_right']+ " " + data_gs1['title_left']+ " " + data_gs1['title_right']
+data_gs1.drop(data_gs1.columns.difference(['product_feature','label']), 1, inplace=True)
+
+ 
+
+Fig- the first five datasets of our train data after column merge
+
+
+Shape of the datasets after column merge.
+ 
+
+Fig – showing the shape of the datasets after column merge.
+
+After merging the columns of our datasets, the image below shows the percentage distribution of each elements in the label. 0 represent non matching while 1 represent matching. It shows that eighty five percent of the label data are non matching, while only fifteen percent are matching. This means that the data is an imbalanced data.
+ 
+Fig – percentage distribution of label elements in train data.
+ 
+Fig – barplot showing the percentage distribution of label elements in train data.
+A plot of testdata and gold standard data shows similar shape.
+
+
+Remove punctuation, generate stopwords , generate stemmer and define tokenizer function
+Library that contains punctuation
+The library string.punctuation contains the symbols below.
+'!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
+With the library above. I will define a function that will remove any symbol above from the features column of each dataset
+
+Function to remove punctuation and tokenize features in the datasets
+def remove_punctuation(text):
+    punctuationfree="".join([i for i in text if i not in string.punctuation])
+    return punctuationfree
+
+Generate stopwords
+I also generated stopwords from the nltk library.
+english_stopwords=stopwords.words('english')
+
+Generate Stemmer
+stemmer= SnowballStemmer(language='english')
+
+Define tokenizer function with stemmer
+def tokenize(text):
+            return [stemmer.stem(token) for token in word_tokenize(text)]
+
+the function above , when applied to the text do you like driving? , the text will change to 
+['do', 'you', 'like', 'drive']
+
+ 
+Fig – Showing the application of tokenizer function.
+
+Application of function remove_punctuation to the features columns in all datasets
+ 
+
+After applying the functions and libraries to the datasets. The code below creates a TF-IDF vectorizer instance.
+
+from time import time
+t0 = time()
+vectorizer = TfidfVectorizer(tokenizer=tokenize , 
+                             stop_words=english_stopwords,
+                            ngram_range=(1,1) , max_df=0.5 , max_features= 1000
+                            )
+duration = time() - t0
+print('Duration:' , duration ,'seconds')
+
+I wound like to explain each lines of the code above.
+“from time import time” -This line imports the `time` function from the `time` module. The `time` function is used to measure time intervals and is used for tracking the execution time of specific code segments.
+
+“t0 = time()” This line uses the `time()` function to record the current time in seconds since the epoch (a specific reference time). It assigns this time value to the variable `t0`, marking the starting point for measuring the execution duration of subsequent code.
+
+“vectorizer = TfidfVectorizer(...)” This line creates an instance of the `TfidfVectorizer` class from the `sklearn.feature_extraction.text` module. This class is used to transform a collection of text documents into a matrix of TF-IDF (Term Frequency-Inverse Document Frequency) features. 
+
+The parameters inside the parentheses configure the behavior of the vectorizer:
+   “tokenizer=tokenize” - Specifies a custom function `tokenize` to tokenize the input text data.
+   “stop_words=english_stopwords” - Specifies a list of stopwords to be removed during the vectorization process.
+   “ngram_range=(1,1)”  This specifies that only single words (unigrams) are considered in the TF-IDF calculation.
+   “max_df=0.5” – This sets a threshold to exclude terms that appear in more than 50% of the documents.
+   “max_features=1000” – This imits the number of unique terms/features to 1000.
+
+“duration = time() - t0” - After creating the vectorizer instance and performing any operations related to its creation, this line calculates the duration of time it took for the vectorizer initialization and configuration. It subtracts the initial time `t0` from the current time (measured again using `time()`) to determine the elapsed duration.
+
+“print('Duration:' , duration ,'seconds')” - Finally, this line prints out the calculated duration of the vectorizer's initialization and configuration. It shows the duration in seconds, indicating how long it took for this specific part of the code to execute.
+
+After that , I used the code vectorizer.fit(data1.product_feature) , 
+The code vectorizer.fit(data1.product_feature) is using the fit method of the TfidfVectorizer object (vectorizer) to analyze and learn from the textual data contained in the data1.product_feature column. This method is a key step in the process of transforming text data into TF-IDF features.
+
+
+The line of code below transforms the text data into a format that can be used as input features for various machine learning algorithms, with each term's TF-IDF weight serving as a feature value in the DataFrame.
+
+inputs = pd.DataFrame(
+            vectorizer.transform(data1.product_feature).toarray(), columns=vectorizer.vocabulary_
+        )
+
+It first takes the text data from the `data1.product_feature` column then uses the previously fitted `vectorizer` to transform the text data into a matrix of TF-IDF features.
+It converts the sparse matrix into a dense NumPy array.
+It creates a new DataFrame named `inputs`, where each column corresponds to a term in the vocabulary (words in the text data), and each row corresponds to a document from the `product_feature` column.
+The values in the DataFrame represent the TF-IDF weights of the terms in the respective documents.
+
+Similar code is written for the remaining two datasets.
+
+
+Splitting the datasets
+X_train , X_val , y_train , y_val = train_test_split(inputs , data1.label , test_size= 0.3 , random_state=42)
+X_train, X_val, y_train, y_val = train_test_split(inputs, data1.label, test_size=0.3, random_state=42)
+This line of code is using the train_test_split function from scikit-learn to split the training data into two parts: one for training (X_train and y_train) and the other for validation (X_val and y_val). The inputs DataFrame contains the feature values obtained from the TF-IDF transformation of the original text data. The data1.label represents the corresponding labels for the training data. The test_size parameter specifies that 30% of the data will be used for validation, and random_state ensures reproducibility.
+
+# Split test data into labels and features
+X_test=test_inputs 
+y_test = test_set1.label
+These lines assign the test data features (X_test) and corresponding labels (y_test) to variables. The variable names suggest that these are being used for testing purposes.
+
+
+# Split test data into labels and features
+X_gs =gs_inputs
+y_gs= data_gs1.label
+The training datasets were splitted into train and validation. The test and gold standard datasets were splitted into features and label. The essence of this code is to split the data into different sets for training, validation, testing, and a separate dataset for model evaluation.
+
+-
+
+ 
+Fig – Showing how the datasets were splitted. 
+
+Initial accuracy test for potential model in experiment one
+After splitting the datasets, Initial Accuracy Test for Potential Models using K fold Evaluation was done. The initial assessment offers an initial glimpse into the potential performance of various models. It guides in choosing models to prioritize for deeper exploration, optimization, and fine-tuning of parameters. The screenshots of performance of each model are given below.
+ 
+
+
+Fig – performance of logistic regression model.
+
+ 
+Fig  - Performance of random forest model 
+
+ 
+Fig – Performance of k-nearest neighbours
+
+ 
+Fig – Performance of Decision tree classifier.
+
+
+
+
+
+Model comparison in experiment one
+Model	Cross value
+Mean	Cross value
+Std. Dev	F1
+Score	Precision 0	Precision 1	Recall 0	Recall 1
+Logistic regression	0.86	0.006	0.86	0.86	0.77	1.00	0.06
+Random
+Forest	0.89	0.003	0.89	0.91	0.75	0.98	0.41
+KNN	0.87	0.004	0.87	0.91	0.56	0.94	0.44
+Decision
+Tree	0.86	0.003	0.86	0.92	0.53	0.92	0.52
+
+Table – model comparison for experiment 1
+Considering the overall model accuracy, the f1 score of random forest classifier is the highest at 89%. I selected random forest. 
+Evaluation of Random Forest Model on validation data
+Accuracy =  0.8871902234772872
+ROC Score: 0.6759
+Confusion matrix of model evaluation on validation data
+[[17097   471]
+ [ 1846  1125]]
+
+ 
+Fig – Confusion matrix of model evaluation on validation data
+
+Classification report of model evaluation on validation data
+ 
+Fig : image showing Classification report of model evaluation on validation data
+Evaluation of Random Forest Model on validation data
+Accuracy =  0.6566666666666666
+ROC Score: 0.5108
+Confusion matrix of model evaluation on test data
+
+[[972   3]
+ [512  13]]
+
+ 
+Fig – Plot of Confusion matrix of model evaluation on test data
+
+ 
+Fig : image showing Classification report of model evaluation on test data
+
+
+
+Evaluation of Random Forest Model on gold standard data
+Accuracy =  0.7745454545454545
+ROC Score: 0.6096
+Confusion matrix of model evaluation on gold standard data
+[[778  22]
+ [226  74]]
+
+ 
+Fig – Confusion matrix of model evaluation on gold standard data
+
+
+
+ 
+Fig : image showing Classification report of model evaluation on test data
+
+
+
+Table for model evaluation on experiment one
+
+
+Data	Overall Accuracy	Precision	Recall 
+	F1	Roc_auc 	Presision 0	Precision 1	Recall 0	Recall 1
+Validation	0.89	0.68	0.90	0.70	0.97	0.38
+Test	0.66	0.51	0.65	0.81	1.00	0.02
+Gold 
+Standard	0.77	0.61	0.77	0.77	0.97	0.25
+
+Table : Model comparison for experiment one
+Hyperparameter tuning for Experiment one
+ 
+Fig – Image showing screenshot of hyperparameter tuning using make_classification library in sklearn
+
+
+Table for evaluation of the hypertuned model on experiment one
+
+
+Data	Overall Accuracy	Precision	Recall 
+	F1	Roc_auc 	Presision 0	Precision 1	Recall 0	Recall 1
+Validation	0.85	0.50	0.86	0.14	0.99	0.01
+Test	0.64	0.50	0.65	0.33	0.98	0.02
+Gold 
+Standard	0.72	0.50	0.73	0.26	0.98	0.02
+
+
+
+
+
+
+
+
+
+
+
+
+EXPERIMENT TWO
+In experiment two, with a thought that the numerous null data might have had an impact on the model. If a dataset contains too many null (missing) values, it can significantly impact the performance of a model many ways. 
+According to Tamboli(2021) If the missing value is of type Missing At Random (MAR) or Missing Completely At Random (MCAR) then it can be deleted . 
+In the analysis, all cases with available data are utilized, while missing observations are assumed to be completely random (MCAR) and addressed through pairwise deletion , i.e drop the columns that have too many missing data and then drop the rows from the remaining dataset that have null values.
+Six columns have more than 40000 missing values:
+The columns are:'specTableContent_left'
+            	    'specTableContent_right' 
+              	   'keyValuePairs_left'  
+              	   'keyValuePairs_right' 
+              	   'price_left' and
+              	   'price_right'
+Remaining data after dropping the six columns above, and deleting all null values
+ 
+Fig – 
+
+
+Merging the features into one column
+ 
+Fig – shape of the datasets after merging all features into one column.
+
+Initial accuracy test for potential model in experiment one
+ 
+Fig – Performance of Logistic Regression model.
+
+ 
+Fig – Performance of Random forest classifier model.
+ 
+Fig – Performance of K-Nearest Neighbours model.
+
+ 
+Fig – Performance of Decision Tree classifier model.
+Initial model accuracy in experiment two
+
+Model	Cross value
+Mean	Cross value
+Std. Dev	F1
+Score	Precision 0	Precision 1	Recall 0	Recall 1
+Logistic regression	0.86	0.0011	0.86	0.87	0.74	0.90	0.12
+Random
+Forest	0.94	0.010	0.94	0.94	0.92	0.99	0.65
+KNN	0.92	0.007	0.91	0.94	0.73	0.96	0.67
+Decision
+Tree	0.92	0.005	0.92	0.95	0.74	0.96	0.69
+Considering the overall model accuracy, the f1 score of random forest classifier is the highest at 94%. I selected random forest. 
+After fitting random forest model in experiment two, below is the table for model evaluation
+
+
+Data	Overall Accuracy	Precision	Recall 
+	F1	Roc_auc 	Presision 0	Precision 1	Recall 0	Recall 1
+Validation	0.94	0.82	0.94	0.92	0.99	0.65
+Test	0.77	0.52	0.77	1.00	1.00	0.05
+Gold 
+Standard	0.79	0.51	0.79	1.00	0.02	0.79
+
+Table : Model comparison for experiment Two
+
+
+
+
+
+EXPERIMENT THREE
+In experiment three, six columns having more than 40000 missing values were dropped , just as it was done in experiment two, then the null values in the remaining dataset were replaced with blanks just like it was done in experiment one. 
+The columns are:'specTableContent_left'
+            	    'specTableContent_right' 
+              	   'keyValuePairs_left'  
+              	   'keyValuePairs_right' 
+              	   'price_left' and
+              	   'price_right'
+The result gotten from Initial accuracy test for potential model in experiment three is given below
+
+Model	Cross value
+Mean	Cross value
+Std. Dev	F1
+Score	Precision 0	Precision 1	Recall 0	Recall 1
+Logistic regression	0.86	0.006	0.86	0.86	0.77	1.00	0.06
+Random
+Forest	0.90	0.004	0.90	0.91	0.76	0.98	0.42
+KNN	0.86	0.05	0.87	0.91	0.54	0.93	0.46
+Decision
+Tree	0.87	0.059	0.87	0.92	0.56	0.93	0.54
+
+Table :  Table showing the result of model comparison in experiment three
+
+
+
+
+Data	Overall Accuracy	Precision	Recall 
+	F1	Roc_auc 	Presision 0	Precision 1	Recall 0	Recall 1
+Validation	0.86	0.51	0.86	0.52	1.00	0.02
+Test	0.76	0.50	0.76	0.00	1.00	0.00
+Gold 
+Standard	0.78	0.50	0.78	0.00	1.00	0.00
+
+Table : Model comparison for experiment Three
+
+
+
+
+
+Experiment Four
+In experiment four , I will be workin with columns less than 20,000 missing values and the brand column. The columns that satisfy the condition of using columns with less than 20,000 null values are: id_left , title_left , description_left , category_left, , cluster_id_left , id_right , title_right, description_right, category_right , and cluster_id_right. 
+I will also exclude pair_id because it is a combination of id_left and id_right.
+This means that I will be using the ten features listed above.
+The result gotten from Initial accuracy test for potential model in experiment four is given below
+Model	Cross value
+Mean	Cross value
+Std. Dev	F1
+Score	Precision 0	Precision 1	Recall 0	Recall 1
+Logistic regression	0.86	0.006	0.86	0.86	0.79	1.00	0.10
+Random
+Forest	0.92	0.006	0.92	0.93	0.81	0.98	0.58
+KNN	0.89	0.009	0.89	0.94	0.65	0.93	0.65
+Decision
+Tree	0.89	0.006	0.89	0.93	0.65	0.94	0.63
+
+Table : Table showing the model comparison using experiment four
+
+Remark: Random forest takes the lead among all models tried. I will fit a random forest model on the data
+
+
+Data	Overall Accuracy	Precision	Recall 
+	F1	Roc_auc 	Presision 0	Precision 1	Recall 0	Recall 1
+Validation	0.82	0.53	0.86	0.28	0.94	0.13
+Test	0.72	0.50	0.72	0.00	1.00	0.00
+Gold 
+Standard	0.76	0.50	0.76	0.00	1.00	0.00
+
+Table : Model comparison for experiment four
+
+
+
+
+
+
+Experiment five:
+In experiment five ,six basic columns were selected. The columns are id_left,id_right, brand_left , brand_right , title_left and title_right.
+The result gotten from Initial accuracy test for potential model in experiment five is given below
+Model	Cross value
+Mean	Cross value
+Std. Dev	F1
+Score	Precision 0	Precision 1	Recall 0	Recall 1
+Logistic regression	0.86	0.006	0.86	0.86	0.75	0.99	0.1
+Random
+Forest	0.91	0.005	0.92	0.90	0.80	0.97	0.56
+KNN	0.90	0.005	0.90	0.93	0.71	0.96	0.59
+Decision
+Tree	0.89	0.008	0.89	0.93	0.65	0.94	0.64
+
+Remark::Random forest takes the lead among all models tried
+
+
+
+Data	Overall Accuracy	Precision	Recall 
+	F1	Roc_auc 	Presision 0	Precision 1	Recall 0	Recall 1
+Validation	0.82	0.53	0.86	0.28	0.94	0.13
+Test	0.72	0.50	0.72	0.00	1.00	0.00
+Gold 
+Standard	0.76	0.50	0.76	0.00	1.00	0.00
+
+
+
+Comparing all the random forest results in all models.
+Model	Cross value
+Mean	Cross value
+Std. Dev	F1
+Score	Precision 0	Precision 1	Recall 0	Recall 1
+Experiment one	0.89	0.003	0.89	0.91	0.75	0.98	0.41
+Experiment Two
+	0.94	0.010	0.94	0.94	0.90	0.99	0.64
+Experiment Three	0.90	0.004	0.90	0.91	0.76	0.98	0.42
+Experiment Four	0.92	0.009	0.92	0.93	0.81	0.98	0.58
+Experiment
+Five	0.92	0.007	0.92	0.93	0.83	0.98	0.58
+
+
+Among the various experiments conducted, the results consistently place experiment one in a higher rank compared to the other experiments. Taking this into account, I will now focus my efforts on delving deeper into experiment two by using randomised search for hypertuning its parameters.
+Comparing all experiments model evaluation on validation, test data and gold standard data
+	Validation	Test data	Gold standard
+	F1	roc	F1	Roc	F1	roc
+Experiment 1	0.89	0.68	0.66	0.51	0.77	0.61
+Experiment 2	0.94	0.82	0.77	0.52	0.78	0.51
+Experiment 3	0.86	0.51	0.76	0.50	0.78	0.50
+Experiment 4	0.82	0.53	0.72	0.50	0.76	0.50
+Experiment 5	0.91	0.76	0.65	0.60	0.54	0.62
+
+
+WORKING FURTHER WITH EXPERIMENT TWO
+Evaluation of Random Forest Model on validation data
+Accuracy =  0.9343967647719613
+Confusion matrix of model evaluation on validation data
+ [[3749   43]
+ [ 249  410]]
+
+ 
+Fig – Performance of Random Forest classifier model in experiment two
+
+Hyperparameter Tuning for Random Forest using Randomised Search
+
+ 
+Fig – screenshot showing the code used for hyperparameter tuning
+
+The result for the hyper parameter tuning are given below:
+
+Best grid search hyperparameters are: {'criterion': 'gini', 'max_depth': None, 'max_features': 5, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 410}
+Best grid search score is: 0.9370124241548684
+
+After fitting random forest model using the parameters above, the result was evaluated on validation data, test data and gold standard data.
+
+Model evaluation on validation data
+
+Accuracy =  0.9427095034823635
+ROC Score: 0.8228
+
+Confusion matrix of model evaluation on validation data in experiment two.
+[[3766   26]
+ [ 229  430]]
+ 
+Fig  – Confusion matrix of model evaluation on validation data in experiment two.
+
+
+ 
+Fig  – plot of Confusion matrix of model evaluation on validation data in experiment two.
+Model evaluation on test data
+Accuracy =  0.7768313458262351
+ROC Score: 0.5403
+Confusion matrix of model evaluation on test data in experiment two.
+
+[[444   2]
+ [129  12]]
+
+Plot of Confusion matrix of model evaluation on test data in experiment two.
+ 
+Fig  – Confusion matrix of model evaluation on test data in experiment two.
+
+
+ 
+Fig  – plot of Confusion matrix of model evaluation on test data in experiment two.
+
+Model evaluation on gold standard data data
+Accuracy =  0.7937219730941704
+ROC Score: 0.5246
+
+Confusion matrix of model evaluation on gold standard data in experiment two.
+
+[[349   1]
+ [ 91   5]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Plot of Confusion matrix of model evaluation on gold standard data in experiment two.
+
+ 
+              precision    recall  f1-score   support
+
+    nonmatch       0.79      1.00      0.88       350
+       match       0.83      0.05      0.10        96
+
+    accuracy                           0.79       446
+   macro avg       0.81      0.52      0.49       446
+weighted avg       0.80      0.79      0.71       446
+
+
+Table for model evaluation on experiment Two
+
+Data	Overall Accuracy	Precision	Recall 
+	F1	Roc_auc 	Presision 0	Precision 1	Recall 0	Recall 1
+Validation	0.94	0.82	0.94	0.94	0.99	0.65
+Test	0.78	0.54	0.77	0.86	1.00	0.09
+Gold 
+Standard	0.79	0.52	0.79	0.83	1.00	0.05
+
+
